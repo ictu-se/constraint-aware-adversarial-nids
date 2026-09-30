@@ -1,0 +1,19 @@
+{
+  "seeds": [
+    20260711,
+    20260712,
+    20260713
+  ],
+  "queries": 128,
+  "epsilon": 0.15,
+  "warmups": 5,
+  "repetitions": 30,
+  "batch_size": 2000,
+  "threads": 4,
+  "python": "3.9.6",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "sklearn": "1.6.1",
+  "numpy": "1.26.4",
+  "pandas": "2.3.3",
+  "scipy": "1.13.1"
+}

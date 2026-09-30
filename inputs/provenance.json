@@ -1,0 +1,28 @@
+[
+  {
+    "file": "cse_cic_ids2018_friday_2018_03_02_r2.csv.gz",
+    "sha256_compressed": "5e362bdcf9e69126315599c943511778c8dcd8fb3be2c5a8ab0e90754360de04",
+    "sha256_uncompressed": "4e8869a7a7f81bbc1673fc0fbe24d19d7672386bdb1166022b8606b6413f80ea",
+    "rows": 12000,
+    "labels": {
+      "Benign": 6000,
+      "Bot": 6000
+    },
+    "provider": "Canadian Institute for Cybersecurity / AWS",
+    "source": "https://www.unb.ca/cic/datasets/ids-2018.html",
+    "scope": "Bounded balanced study subset; not representative of complete day or corpus"
+  },
+  {
+    "file": "cse_cic_ids2018_thursday_2018_03_01_sample.csv.gz",
+    "sha256_compressed": "a92382572d6e51fe1b0471052ec3b2b0590bf68416fde0188e3704bcff76ad0a",
+    "sha256_uncompressed": "07dfbd243de5bb61a311e030f7383d7558d79ab4f2cedc16430677ed67621e79",
+    "rows": 29988,
+    "labels": {
+      "Benign": 15000,
+      "Infilteration": 14988
+    },
+    "provider": "Canadian Institute for Cybersecurity / AWS",
+    "source": "https://www.unb.ca/cic/datasets/ids-2018.html",
+    "scope": "Bounded balanced study subset; not representative of complete day or corpus"
+  }
+]

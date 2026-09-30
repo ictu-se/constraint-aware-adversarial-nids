@@ -1,0 +1,14 @@
+{
+  "random_seed": 20260826,
+  "bootstrap_replicates": 2000,
+  "reused_existing_results": false,
+  "test_partition": "UNSW-NB15 official test partition",
+  "n_test": 50000,
+  "aligned_features": [
+    "dst_bytes",
+    "dst_host_count",
+    "duration",
+    "src_bytes",
+    "srv_count"
+  ]
+}

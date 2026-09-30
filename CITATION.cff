@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this replication package, please cite the archived software record."
+title: "Replication package for constraint-aware adversarial robustness and cross-dataset generalization for network intrusion detection systems"
+type: software
+authors:
+  - family-names: Nguyen
+    given-names: The-Vinh
+  - family-names: Nguyen
+    given-names: Van-Viet
+version: 2.0.0
+date-released: 2026-09-30
+license: MIT
+repository-code: "https://github.com/ictu-se/constraint-aware-adversarial-nids"

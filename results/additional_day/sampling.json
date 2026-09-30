@@ -1,0 +1,6 @@
+{
+  "url": "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Processed%20Traffic%20Data%20for%20ML%20Algorithms/Friday-02-03-2018_TrafficForML_CICFlowMeter.csv",
+  "rows_read": 50000,
+  "per_class": 6000,
+  "scheme": "first chunks until class quotas filled; within-chunk seeded selection; not a representative reservoir"
+}

@@ -1,0 +1,17 @@
+{
+  "seed": 20260711,
+  "epsilons": [
+    0.0,
+    0.03,
+    0.06,
+    0.1,
+    0.15
+  ],
+  "max_train": 80000,
+  "max_test": 50000,
+  "datasets": [
+    "UNSW-NB15/temporal_official",
+    "UNSW-NB15/random",
+    "KDDCup99/random"
+  ]
+}
