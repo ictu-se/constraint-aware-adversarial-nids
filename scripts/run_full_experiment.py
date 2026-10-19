@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import time
 import urllib.request
 from dataclasses import dataclass
@@ -185,19 +186,19 @@ def load_kdd(data_dir: Path) -> SplitData:
 
 def make_models() -> Dict[str, object]:
     return {
-        "LogReg": LogisticRegression(max_iter=1000, class_weight="balanced", n_jobs=-1, random_state=SEED),
+        "LogReg": LogisticRegression(max_iter=1000, class_weight="balanced", n_jobs=4, random_state=SEED),
         "RandomForest": RandomForestClassifier(
             n_estimators=220,
             min_samples_leaf=2,
             class_weight="balanced_subsample",
-            n_jobs=-1,
+            n_jobs=4,
             random_state=SEED,
         ),
         "ExtraTrees": ExtraTreesClassifier(
             n_estimators=260,
             min_samples_leaf=2,
             class_weight="balanced",
-            n_jobs=-1,
+            n_jobs=4,
             random_state=SEED,
         ),
         "HistGB": HistGradientBoostingClassifier(
@@ -257,10 +258,12 @@ def infer_constraints(X_train: pd.DataFrame, feature_names: List[str]) -> Dict[s
     monotone_non_decrease_idx = []
     for i, name in enumerate(feature_names):
         lname = name.lower()
+        normalized_name = re.sub(r"[^a-z0-9]", "", lname)
         vals = X_train.iloc[:, i].dropna().to_numpy()
         if len(vals) and np.mean(np.isclose(vals, np.round(vals), atol=1e-6)) > 0.98:
             integer_idx.append(i)
-        if any(p in lname for p in ["ttl", "sttl", "dttl", "win", "state", "is_", "ct_state_ttl"]):
+        if (any(p in lname for p in ["ttl", "sttl", "dttl", "win", "state", "is_", "ct_state_ttl"])
+                or normalized_name in {"protocol", "proto", "srcport", "dstport", "sourceport", "destinationport"}):
             immutable_idx.append(i)
         if any(p in lname for p in ["byte", "bytes", "sbytes", "dbytes", "pkt", "pkts", "count", "dur"]):
             monotone_non_decrease_idx.append(i)
@@ -304,6 +307,7 @@ def project_adversarial(
     malicious: np.ndarray,
     direction: np.ndarray,
     constraints: Dict[str, object],
+    epsilon: float,
 ) -> np.ndarray:
     """Project attacked malicious rows while leaving benign rows unchanged."""
     if not np.any(malicious):
@@ -337,7 +341,14 @@ def project_adversarial(
     # Revert any coordinate that moved opposite to the surrogate sign.
     reversed_direction = (attacked - attacked_orig) * direction.reshape(1, -1) < -1e-8
     attacked[reversed_direction] = attacked_orig[reversed_direction]
+    # Rounding is part of the attack and must obey the same final budget.
+    # Reversion preserves observed fractional anchors when no admissible
+    # integer proposal exists within the declared coordinate interval.
+    span = np.maximum(constraints["perturb_high"] - constraints["perturb_low"], 1e-6)
+    outside_budget = np.abs(attacked.astype(np.float64) - attacked_orig) > (epsilon * span.astype(np.float64) + 1e-5 * span)
+    attacked[outside_budget] = attacked_orig[outside_budget]
     Xv[malicious] = attacked
+    assert budget_violation_rate(Xv, orig, constraints, epsilon, malicious) == 0.0
     return Xv
 
 
@@ -362,13 +373,28 @@ def make_adversarial(
     Xv[malicious] += delta
 
     if constrained:
-        Xv = project_adversarial(Xv, orig, malicious, direction, constraints)
+        Xv = project_adversarial(Xv, orig, malicious, direction, constraints, epsilon)
 
     violations = constraint_violations(Xv, orig, constraints, malicious)
     delta_rows = Xv[malicious] - orig[malicious]
     l0 = np.mean(np.sum(np.abs(delta_rows) > 1e-8, axis=1)) if np.any(malicious) else 0.0
     linf = np.mean(np.max(np.abs(delta_rows), axis=1)) if np.any(malicious) else 0.0
     return pd.DataFrame(Xv, columns=X.columns), float(violations), float(l0), float(linf)
+
+
+def budget_violation_rate(candidate, original, constraints, epsilon, mask=None):
+    """Fraction of evaluated rows exceeding the normalized final budget.
+
+    A 1e-5 normalized tolerance accommodates float32 arithmetic, rather than
+    permitting the unit-sized changes caused by unrestricted integer rounding.
+    """
+    if mask is None:
+        mask = np.ones(len(candidate), dtype=bool)
+    if not np.any(mask):
+        return 0.0
+    span = np.maximum(constraints["perturb_high"] - constraints["perturb_low"], 1e-6)
+    normalized = np.abs(np.asarray(candidate, dtype=np.float64)[mask] - np.asarray(original, dtype=np.float64)[mask]) / span
+    return float(np.mean(np.any(normalized > epsilon + 1e-5, axis=1)))
 
 
 def constraint_violations(

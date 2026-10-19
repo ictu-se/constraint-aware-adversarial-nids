@@ -4,7 +4,9 @@ Reproducible experiments for **Constraint-aware Adversarial Robustness and Cross
 
 Public code and results: https://github.com/ictu-se/constraint-aware-adversarial-nids
 
-Version 2.0.0 adds target-specific score-query attacks, unseen-attack defense evaluation, validation-only threshold sensitivity, repeated CPU timing, and a second CSE-CIC day. It corrects infiltration-sample imputation to use training medians after splitting. The earlier release remains at https://doi.org/10.5281/zenodo.22161883; that archive does not contain these additions.
+Version 2.1.0 corrects integer-rounding overshoot by enforcing the final normalized perturbation budget in projected, top-ten and augmentation candidates. Protocol identifiers and source/destination ports are immutable where present. Affected experiments have been rerun; four publication figures are exported at publication size as RGB LZW TIFF and PNG. Infiltration repetitions are model seeds on one fixed partition; UNSW/KDD use subsampling within fixed partitions, and Bot-day uses repeated splits.
+
+Version 2.0.0 added target-specific score-query attacks, unseen-attack defense evaluation, validation-only threshold sensitivity, repeated CPU timing, and a second CSE-CIC day. It corrects infiltration-sample imputation to use training medians after splitting. The earlier release remains at https://doi.org/10.5281/zenodo.22161883; that archive does not contain these additions.
 
 ## Install
 
@@ -35,17 +37,21 @@ python scripts/run_q1_upgrade_experiment.py
 # Paired clean-model comparisons and within-/cross-dataset five-feature controls.
 python scripts/run_revision_analyses.py
 
-# Direct target queries, validation calibration, and repeated inference timing.
-python scripts/run_r2_checks.py
+# Direct target queries and validation calibration.
+python scripts/run_r2_checks.py --skip-latency
 
 # Bounded benign/Bot sample from 2 March 2018, with three within-day splits.
 python scripts/run_additional_day.py
+
+# Time saved targets after all experiment workloads have finished.
+python scripts/measure_r2_latency.py
 
 # Recreate figure panels and the four assembled figures from result tables.
 python scripts/regenerate_manuscript_figures.py
 python scripts/build_submission_figures.py
 
 # Check archived measurements against their underlying predictions and traces.
+python scripts/test_attack_invariants.py
 python scripts/audit_r2_results.py
 python scripts/verify_package.py
 ```
@@ -56,7 +62,7 @@ The score-query study can be run with `--skip-latency` when other computation is
 
 - `scripts/`: executable experiment, sampling, analysis, figure-generation, and verification workflows.
 - `inputs/`: compressed copies of the exact two bounded external study samples, plus source attribution and hashes. These are study subsets of a public benchmark, not privately collected traffic.
-- `results/full_experiment/`: original base-run model/attack/transfer summaries and metadata; no preprocessing-dependent UNSW/KDD score changed in the revision.
+- `results/full_experiment/`: primary model/attack/transfer summaries and metadata; clean and transfer scores are unchanged, while attack results reflect the corrected budget.
 - `results/q1_upgrade/`: recomputed 240 clean and 2,160 attack-condition rows; 240 compressed per-flow evidence files retain labels, clean and attacked predictions, and probabilities for all conditions.
 - `results/revision_analyses/`: three paired comparisons and ten feature-alignment rows, paired predictions, 2,000 bootstrap differences for each comparison, and within-dataset full/five-feature predictions.
 - `results/r2_checks/`: 18 model/defense/seed evidence sets, 144 metric rows, 18 thresholds, query trajectories, original/final adversarial feature values, training/validation/test identities and constraint manifests, and 1,080 timing observations.
@@ -79,7 +85,7 @@ The external inputs are bounded, class-balanced subsets, not representative samp
 
 The scripts split before learning imputation and feature selection, then apply frozen training transforms. Training ranges, empirical integer membership, model scaling, and surrogate fitting exclude test data. The query test also excludes calibration rows from fitting. A frozen 0.35 cutoff is retained as the main experiment's uncalibrated alert heuristic; the additional threshold test uses a disjoint training-file validation set and a prespecified 5% benign-FPR rule. It does not retune against test labels.
 
-The manifest is a feature-space approximation. Name-matched monotonicity and empirical integrality are not proofs of packet realizability, dependency consistency, or preserved attack functionality. Query search uses the same declared envelope but can move either way on non-monotonic coordinates and additionally enforces its explicit per-coordinate budget.
+The manifest is a feature-space approximation. Name-matched monotonicity and empirical integrality are not proofs of packet realizability, dependency consistency, or preserved attack functionality. All constrained attacks and augmentation enforce the same final quantile-span coordinate budget after rounding, with a normalized tolerance of 1e-5 for float32 arithmetic. Coordinates outside that interval revert to their observed values. Query search can move either way on non-monotonic coordinates; transferred attacks retain their surrogate sign. Protocol and endpoint fields remain fixed in both cases.
 
 ## Scope of release
 

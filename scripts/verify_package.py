@@ -63,7 +63,7 @@ def main() -> None:
     q1 = pd.read_csv(ROOT / "results/q1_upgrade/q1_adversarial_by_seed.csv")
     q1_positive = q1[q1["epsilon"] > 0]
     q1_projected = q1_positive[q1_positive["attack"].isin(
-        ["constraint_aware", "greedy_constraint_aware"]
+        ["constraint_aware", "constraint_greedy"]
     )]
     q1_unconstrained = q1_positive[
         q1_positive["attack"] == "unconstrained_surrogate"

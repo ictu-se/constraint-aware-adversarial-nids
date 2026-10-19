@@ -7,7 +7,7 @@ authors:
     given-names: The-Vinh
   - family-names: Nguyen
     given-names: Van-Viet
-version: 2.0.0
-date-released: 2026-09-30
+version: 2.1.0
+date-released: 2026-10-19
 license: MIT
 repository-code: "https://github.com/ictu-se/constraint-aware-adversarial-nids"

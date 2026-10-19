@@ -2,8 +2,8 @@
 """Q1-strengthening experiment for direction 03.
 
 This script extends the initial benchmark with:
-  * repeated stratified resampling seeds and bootstrap confidence intervals;
-  * a stronger greedy constrained attack;
+  * subsampling/model seeds with descriptive variability summaries;
+  * a top-ten-coordinate constrained surrogate variant;
   * lightweight deployable defenses: feature squeezing, adversarial
     augmentation, and reject-option classification;
   * generic CSV loader support for CICIDS/CICIoT/UQ NetFlow-style files when
@@ -58,14 +58,14 @@ def models(seed: int) -> Dict[str, object]:
         n_estimators=180,
         min_samples_leaf=2,
         class_weight="balanced_subsample",
-        n_jobs=-1,
+        n_jobs=4,
         random_state=seed,
     )
     et = ExtraTreesClassifier(
         n_estimators=220,
         min_samples_leaf=2,
         class_weight="balanced",
-        n_jobs=-1,
+        n_jobs=4,
         random_state=seed,
     )
     hgb = HistGradientBoostingClassifier(
@@ -75,19 +75,19 @@ def models(seed: int) -> Dict[str, object]:
         random_state=seed,
     )
     return {
-        "LogReg": LogisticRegression(max_iter=900, class_weight="balanced", n_jobs=-1, random_state=seed),
+        "LogReg": LogisticRegression(max_iter=900, class_weight="balanced", n_jobs=4, random_state=seed),
         "RandomForest": rf,
         "ExtraTrees": et,
         "HistGB": hgb,
         "SoftVoteEnsemble": VotingClassifier(
             estimators=[
-                ("lr", LogisticRegression(max_iter=900, class_weight="balanced", n_jobs=-1, random_state=seed)),
+                ("lr", LogisticRegression(max_iter=900, class_weight="balanced", n_jobs=4, random_state=seed)),
                 ("rf", rf),
                 ("et", et),
                 ("hgb", hgb),
             ],
             voting="soft",
-            n_jobs=-1,
+            n_jobs=4,
             weights=[0.7, 1.0, 1.2, 1.0],
         ),
     }
@@ -152,13 +152,13 @@ def greedy_attack(
     )
     mutable = np.ones(Xv.shape[1], dtype=bool)
     mutable[np.asarray(constraints["immutable_idx"], dtype=int)] = False
-    ranked = np.argsort(-np.abs(direction * span))
+    ranked = np.argsort(-np.abs(direction * span), kind="stable")
     ranked = [i for i in ranked if mutable[i]][:top_k]
     for j in ranked:
         step = epsilon * span[j] * np.sign(direction[j] if direction[j] != 0 else 1)
         Xv[malicious, j] += step
     if constrained:
-        Xv = BASE.project_adversarial(Xv, orig, malicious, direction, constraints)
+        Xv = BASE.project_adversarial(Xv, orig, malicious, direction, constraints, epsilon)
     violation = BASE.constraint_violations(Xv, orig, constraints, malicious)
     delta_rows = Xv[malicious] - orig[malicious]
     l0 = np.mean(np.sum(np.abs(delta_rows) > 1e-8, axis=1)) if np.any(malicious) else 0.0
